@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileNet Demo</title>
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <!-- MobileNet Model -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+</head>
+<body>
+    <!-- Elemento de video para capturar imágenes -->
+    <video id="video" autoplay playsinline muted width="640" height="480" style="border: 1px solid black;"></video>
+    
+    <!-- Contenedor para mostrar los resultados -->
+    <div id="results" style="margin-top: 20px; font-family: Arial, sans-serif;">
+        <h3>Resultados:</h3>
+        <p id="prediction">Esperando predicciones...</p>
+    </div>
+
+    <script>
+        // Código JavaScript para inicializar el video y el modelo MobileNet
+        const video = document.getElementById('video');
+        const predictionElement = document.getElementById('prediction');
+
+        // Función para iniciar la cámara (usando la cámara trasera)
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { exact: "environment" } // Solicita la cámara trasera
+                },
+                audio: false
+            });
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    resolve(video);
+                };
+            });
+        }
+
+        // Función para cargar el modelo MobileNet y realizar predicciones
+        async function loadModelAndPredict() {
+            // Carga el modelo MobileNet
+            const model = await mobilenet.load();
+            console.log('Modelo MobileNet cargado.');
+
+            // Realizar predicciones continuamente
+            setInterval(async () => {
+                // Clasifica el contenido del video
+                const predictions = await model.classify(video);
+                if (predictions.length > 0) {
+                    // Muestra la predicción más probable en el contenedor de resultados
+                    predictionElement.textContent = `Predicción: ${predictions[0].className} (Confianza: ${(predictions[0].probability * 100).toFixed(2)}%)`;
+                }
+            }, 1000); // Realizar predicciones cada segundo
+        }
+
+        // Inicializar la cámara y el modelo
+        async function init() {
+            try {
+                await setupCamera(); // Configura la cámara
+                await loadModelAndPredict(); // Carga el modelo y comienza las predicciones
+            } catch (error) {
+                console.error('Error durante la inicialización:', error);
+                predictionElement.textContent = 'No se pudo acceder a la cámara.';
+            }
+        }
+
+        init(); // Llama a la función principal para iniciar todo
+    </script>
+</body>
+</html>
